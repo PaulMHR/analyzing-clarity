@@ -45,17 +45,36 @@ def dbfft(x, fs, win=None, ref=32768):
 
     return freq, s_dbfs
 
-def harmonic_width(freq, s_db, peak_freq, d, threshold):
+def midpoint(x1, y1, x2, y2, target_y):
+    assert x1 < x2
+
+    slope = (y2 - y1) / (x2 - x1)
+    b = y2 - (slope * x2)
+    mid_x = (target_y - b) / slope
+    mid_y = target_y
+
+    return mid_x, mid_y
+
+def harmonic_width(freq, s_db, peak_freq, d):
     peak_freq_i = 0
     for i in range(len(freq)):
         if freq[i] >= peak_freq:
             peak_freq_i = i
             break
 
+    jump = 5
+
     peak_height = s_db[peak_freq_i]
-    while (s_db[peak_freq_i + 1] > s_db[peak_freq_i] or peak_height < threshold): # we assume that the given peak_freq always lags behind the true peak freq
-        peak_freq_i += 1
-        peak_height = s_db[peak_freq_i]
+
+    while (True):
+        for i in range(1, jump):
+            if s_db[peak_freq_i + i] > s_db[peak_freq_i]:
+                peak_freq_i += i
+                break
+        if s_db[peak_freq_i] > peak_height:
+            peak_height = s_db[peak_freq_i]
+        else:
+            break
 
     while (s_db[peak_freq_i - 1] > s_db[peak_freq_i]):
         peak_freq_i -= 1
@@ -71,30 +90,18 @@ def harmonic_width(freq, s_db, peak_freq, d, threshold):
             left_point_y = target_height
             break
         elif s_db[i] < target_height:
-            left_point_x = freq[i]
-            left_point_y = s_db[i]
-            upper_point_x = freq[i + 1]
-            upper_point_y = s_db[i + 1]
-            slope = (upper_point_y - left_point_y) / (upper_point_x - left_point_x)
-            #left_point_x = slope / target_height
-            #left_point_y = target_height
+            left_point_x, left_point_y = midpoint(freq[i], s_db[i], freq[i + 1], s_db[i + 1], target_height)
             break
 
     # Now the right side of the peak...
     right_point_x = freq[peak_freq_i]
     for i in range(peak_freq_i, len(freq)):
-        if s_db[i] <= target_height:
+        if s_db[i] == target_height:
             right_point_x = freq[i]
             right_point_y = target_height
             break
         elif s_db[i] < target_height:
-            right_point_x = freq[i]
-            right_point_y = s_db[i]
-            upper_point_x = freq[i - 1]
-            upper_point_y = s_db[i - 1]
-            slope = (right_point_y - upper_point_y) / (right_point_x - upper_point_x)
-            #right_point_x = slope / target_height
-            #right_point_y = target_height
+            right_point_x, right_point_y = midpoint(freq[i - 1], s_db[i - 1], freq[i], s_db[i], target_height)
             break
 
     return right_point_x - left_point_x, left_point_x, right_point_x, peak_freq
@@ -120,20 +127,21 @@ def main():
     HARMONICS = [FUNDAMENTAL_HARMONIC * (i + 1) for i in range(NBR_HARMONICS)]
 
     d = 15
-    threshold = 60 # in my experience, 60 is a pretty good value here
 
     # Graph it!
     plt.plot(freq, s_db)
 
     diff_sum = 0
     for i in range(NBR_HARMONICS):
-        diff, left, right, peak_freq = harmonic_width(freq, s_db, HARMONICS[i], d, threshold)
-        plt.axvline(x=HARMONICS[i], color="black")
-        plt.axvline(x=peak_freq, color="green")
-        #plt.axvline(x=left, color="red")
-        #plt.axvline(x=right, color="orange")
+        diff, left, right, peak_freq = harmonic_width(freq, s_db, HARMONICS[i], d)
+        #plt.axvline(x=HARMONICS[i], color="black")
+        #plt.axvline(x=peak_freq, color="green")
+        plt.axvline(x=left, color="red")
+        plt.axvline(x=right, color="orange")
         #plt.plot(freq, [diff]*len(freq))
         diff_sum += diff
+
+    hbm = diff_sum / NBR_HARMONICS
 
     print(diff_sum)
     
