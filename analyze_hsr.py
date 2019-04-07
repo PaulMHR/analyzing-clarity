@@ -137,8 +137,6 @@ def analyze_hsr(filename, b = 4, show_graph = False):
     power_sum = 0
     for i in range(NBR_HARMONICS):
         power, true_peak, left, right = harmonic_power(freq, s_db, HARMONICS[i], b, N)
-        #plt.axvline(x=HARMONICS[i], color="black")
-        #plt.axvline(x=true_peak, color="green")
         plt.axvline(x=left, color="red")
         plt.axvline(x=right, color="orange")
         power_sum += power

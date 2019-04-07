@@ -133,8 +133,6 @@ def analyze_hbm(filename, d = 15, show_graph = False):
     diff_sum = 0
     for i in range(NBR_HARMONICS):
         diff, left, right, peak_freq = harmonic_width(freq, s_db, HARMONICS[i], d)
-        #plt.axvline(x=HARMONICS[i], color="black")
-        #plt.axvline(x=peak_freq, color="green")
         plt.axvline(x=left, color="red")
         plt.axvline(x=right, color="orange")
         diff_sum += diff
