@@ -1,10 +1,12 @@
 #!/usr/bin/env python
+
 # Code from https://dsp.stackexchange.com/questions/32076/fft-to-spectrum-in-decibel
+# Algorithm designed by Paul Rudmik
 
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.io.wavfile as wf
-import sys
+import sys, os, glob
 
 plt.close('all')
 
@@ -106,10 +108,9 @@ def harmonic_width(freq, s_db, peak_freq, d):
 
     return right_point_x - left_point_x, left_point_x, right_point_x, peak_freq
 
-
-def main():
+def analyze_hbm(filename, d = 15, show_graph = False):
     # Load the file
-    fs, signal = wf.read(sys.argv[1])
+    fs, signal = wf.read(filename)
     signal = [signal_i[0] for signal_i in signal]
 
     # Take slice
@@ -126,8 +127,6 @@ def main():
     FUNDAMENTAL_HARMONIC = 82.0953
     HARMONICS = [FUNDAMENTAL_HARMONIC * (i + 1) for i in range(NBR_HARMONICS)]
 
-    d = 15
-
     # Graph it!
     plt.plot(freq, s_db)
 
@@ -138,17 +137,28 @@ def main():
         #plt.axvline(x=peak_freq, color="green")
         plt.axvline(x=left, color="red")
         plt.axvline(x=right, color="orange")
-        #plt.plot(freq, [diff]*len(freq))
         diff_sum += diff
 
     hbm = diff_sum / NBR_HARMONICS
-
-    print(diff_sum)
     
     plt.grid(True)
     plt.xlabel('Frequency [Hz]')
     plt.ylabel('Amplitude [dB]')
-    plt.show()
+    if show_graph: plt.show()
+
+    return hbm
+
+def main():
+    quiet = False
+    if not quiet: print("Harmonic Bandwidth Measurement")
+    os.chdir(sys.argv[1])
+    for filename in glob.glob("*.wav"):
+        if len(sys.argv) > 2:
+            hbm = analyze_hbm(filename, int(sys.argv[2]))
+        else:
+            hbm = analyze_hbm(filename)
+        if not quiet: print(filename)
+        print(hbm)
 
 if __name__ == "__main__":
     main()

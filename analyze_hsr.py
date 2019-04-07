@@ -1,11 +1,14 @@
 #!/usr/bin/env python
+
 # Code from https://dsp.stackexchange.com/questions/32076/fft-to-spectrum-in-decibel
+# Algorithm designed by Paul Rudmik
 
 from __future__ import print_function, division
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.io.wavfile as wf
 import sys
+import glob, os
 
 plt.close('all')
 
@@ -46,17 +49,26 @@ def dbfft(x, fs, win=None, ref=32768):
 
     return freq, s_dbfs
 
-def find_harmonic(freq, s_db, peak_freq, threshold):
+def find_harmonic(freq, s_db, peak_freq):
     peak_freq_i = 0
     for i in range(len(freq)):
         if freq[i] >= peak_freq:
             peak_freq_i = i
             break
 
+    jump = 5
+
     peak_height = s_db[peak_freq_i]
-    while (s_db[peak_freq_i + 1] > s_db[peak_freq_i] or peak_height < threshold): # we assume that the given peak_freq always lags behind the true peak freq
-        peak_freq_i += 1
-        peak_height = s_db[peak_freq_i]
+
+    while (True):
+        for i in range(1, jump):
+            if s_db[peak_freq_i + i] > s_db[peak_freq_i]:
+                peak_freq_i += i
+                break
+        if s_db[peak_freq_i] > peak_height:
+            peak_height = s_db[peak_freq_i]
+        else:
+            break
 
     while (s_db[peak_freq_i - 1] > s_db[peak_freq_i]):
         peak_freq_i -= 1
@@ -66,8 +78,8 @@ def find_harmonic(freq, s_db, peak_freq, threshold):
 
     return peak_freq, peak_freq_i
 
-def harmonic_power(freq, s_db, peak_freq, threshold, b, N):
-    true_peak, true_peak_i = find_harmonic(freq, s_db, peak_freq, threshold)
+def harmonic_power(freq, s_db, peak_freq, b, N):
+    true_peak, true_peak_i = find_harmonic(freq, s_db, peak_freq)
     left_freq_i = true_peak_i
     right_freq_i = true_peak_i
 
@@ -100,9 +112,9 @@ def total_power(freq, s_db, N):
 
     return power
 
-def main():
+def analyze_hsr(filename, b = 4, show_graph = False):
     # Load the file
-    fs, signal = wf.read(sys.argv[1])
+    fs, signal = wf.read(filename)
     signal = [signal_i[0] for signal_i in signal]
 
     # Take slice
@@ -119,33 +131,39 @@ def main():
     FUNDAMENTAL_HARMONIC = 82.0953
     HARMONICS = [FUNDAMENTAL_HARMONIC * (i + 1) for i in range(NBR_HARMONICS)]
 
-    b = 4
-    threshold = 60 # in my experience, 60 is a pretty good value here
-
     # Graph it!
     plt.plot(freq, s_db)
 
     power_sum = 0
     for i in range(NBR_HARMONICS):
-        power, true_peak, left, right = harmonic_power(freq, s_db, HARMONICS[i], threshold, b, N)
+        power, true_peak, left, right = harmonic_power(freq, s_db, HARMONICS[i], b, N)
         #plt.axvline(x=HARMONICS[i], color="black")
         #plt.axvline(x=true_peak, color="green")
         plt.axvline(x=left, color="red")
         plt.axvline(x=right, color="orange")
-        #plt.plot(freq, [diff]*len(freq))
         power_sum += power
 
     total_power_calc = total_power(freq, s_db, N)
     hsr = power_sum / total_power_calc
-
-    print(power_sum)
-    print(total_power_calc)
-    print(hsr)
     
     plt.grid(True)
     plt.xlabel('Frequency [Hz]')
     plt.ylabel('Amplitude [dB]')
-    plt.show()
+    if show_graph: plt.show()
+
+    return hsr
+
+def main():
+    quiet = False
+    if not quiet: print("Harmonic-to-Signal Ratio")
+    os.chdir(sys.argv[1])
+    for filename in glob.glob("*.wav"):
+        if len(sys.argv) > 2:
+            hsr = analyze_hsr(filename, int(sys.argv[2]))
+        else:
+            hsr = analyze_hsr(filename)
+        if not quiet: print(filename)
+        print(hsr)
 
 if __name__ == "__main__":
     main()
