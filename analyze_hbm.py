@@ -123,7 +123,7 @@ def analyze_hbm(filename, d = 15, show_graph = False):
     s_db = s_dbfs + K
 
     # Harmonic Profile -- since we know all samples are an eLow, we already know where all the peaks are!
-    NBR_HARMONICS = 10
+    NBR_HARMONICS = 12
     FUNDAMENTAL_HARMONIC = 82.0953
     HARMONICS = [FUNDAMENTAL_HARMONIC * (i + 1) for i in range(NBR_HARMONICS)]
 
@@ -152,7 +152,7 @@ def main():
     os.chdir(sys.argv[1])
     for filename in glob.glob("*.wav"):
         if len(sys.argv) > 2:
-            hbm = analyze_hbm(filename, int(sys.argv[2]))
+            hbm = analyze_hbm(filename, int(sys.argv[2]), True)
         else:
             hbm = analyze_hbm(filename)
         if not quiet: print(filename)

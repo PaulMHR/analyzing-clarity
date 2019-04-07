@@ -127,7 +127,7 @@ def analyze_hsr(filename, b = 4, show_graph = False):
     s_db = s_dbfs + K
 
     # Harmonic Profile -- since we know all samples are an eLow, we already know where all the peaks are!
-    NBR_HARMONICS = 10
+    NBR_HARMONICS = 12
     FUNDAMENTAL_HARMONIC = 82.0953
     HARMONICS = [FUNDAMENTAL_HARMONIC * (i + 1) for i in range(NBR_HARMONICS)]
 
