@@ -88,7 +88,7 @@ def analyze_ibr(filename, order = 10, show_grid = False):
     return IBR_sum / NBR_TRACKS
 
 def main():
-    quiet = False
+    quiet = True
     if not quiet: print("Inter-Band Relationship")
     os.chdir(sys.argv[1])
     for filename in glob.glob("*.wav"):

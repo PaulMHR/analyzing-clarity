@@ -147,12 +147,12 @@ def analyze_hbm(filename, d = 15, show_graph = False):
     return hbm
 
 def main():
-    quiet = False
+    quiet = True
     if not quiet: print("Harmonic Bandwidth Measurement")
     os.chdir(sys.argv[1])
     for filename in glob.glob("*.wav"):
         if len(sys.argv) > 2:
-            hbm = analyze_hbm(filename, int(sys.argv[2]), True)
+            hbm = analyze_hbm(filename, int(sys.argv[2]))
         else:
             hbm = analyze_hbm(filename)
         if not quiet: print(filename)
